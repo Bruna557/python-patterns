@@ -10,9 +10,7 @@ class OutOfStock(Exception):
 # A standalone function for our domain service
 def allocate(line: OrderLine, batches: List[Batch]) -> str:
     try:
-        batch = next(
-            b for b in sorted(batches) if b.can_allocate(line)
-        )
+        batch = next(b for b in sorted(batches) if b.can_allocate(line))
         batch.allocate(line)
         return batch.reference
     except StopIteration:
@@ -22,13 +20,12 @@ def allocate(line: OrderLine, batches: List[Batch]) -> str:
 '''
 The dataclass decorator will add dunder methods to the class (__init__,
 __repr__, __eq__, __hash__).
-If frozen is True, assigning to fields will generate an exception.
 
 A value object is any domain object that is uniquely identified by the data it
 holds; we usually make them immutable. Two lines with the same orderid, sku,
 and qty are equal.
 '''
-@dataclass(frozen=True)
+@dataclass(unsafe_hash=True)
 class OrderLine:
     orderid: str
     sku: str
@@ -50,6 +47,9 @@ class Batch:
         self.eta = eta
         self._purchased_quantity = qty
         self._allocations = set() # type: Set[OrderLine]
+
+    def __repr__(self):
+        return f"<Batch {self.reference}>"
 
     def __eq__(self, other): # defines the behavior of the == operator
         if not isinstance(other, Batch):

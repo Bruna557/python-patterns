@@ -12,3 +12,8 @@ We can't allocate to a batch if the available quantity is less than the quantity
 ```bash
 pytest
 ```
+
+## Patterns
+### Repository
+The Repository pattern is an abstraction over persistent storage. It hides the boring details of data access by pretending that all of our data is in memory.
+It also makes it easy to create a FakeRepository for testing.
