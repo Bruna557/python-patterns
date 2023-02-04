@@ -28,10 +28,28 @@ GRANT INSERT ON ALL TABLES IN SCHEMA public TO allocation;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO allocation;
 
 ## Run app
-export FLASK_APP=entrypoints/flask_app.py
+export FLASK_APP=allocation/entrypoints/flask_app.py
 export FLASK_DEBUG=1
 export PYTHONUNBUFFERED=1
 flask run --host=0.0.0.0 --port=5005
+
+## Testing
+curl --location --request POST 'http://127.0.0.1:5005/batches' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "ref": "321",
+    "sku": "COMPLICATED-LAMP",
+    "qty": 17,
+    "eta": "2023-02-04"
+}'
+
+curl --location --request POST 'http://127.0.0.1:5005/allocate' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "orderid": "321",
+    "sku": "COMPLICATED-LAMP",
+    "qty": 5
+}'
 
 ## Chapters
 ### 2 - Repository Pattern
@@ -66,3 +84,7 @@ Every line of code that we put in a test is like a blob of glue, holding the sys
 Tests are supposed to help us change our system fearlessly, but often we see teams writing too many tests against their domain model. This causes problems when they come to change their codebase and find that they need to update tens or even hundreds of unit tests.
 
 Most of the time, when we are adding a new feature or fixing a bug, we don’t need to make extensive changes to the domain model. In these cases, we prefer to write tests against services because of the lower coupling and higher coverage. When starting a new project or when hitting a particularly gnarly problem, we will drop back down to writing tests against the domain model so we get better feedback and executable documentation of our intent.
+
+### 6 - Unit of Work
+The Unit of Work (UoW) pattern is our abstraction over the concept of atomic operations. It will allow us to finally and fully decouple our service layer from the data layer.
+We implemented the UoW class using Python Context Manager; the with keyword is used.

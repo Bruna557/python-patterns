@@ -1,5 +1,5 @@
 import abc
-from domain import model
+from allocation.domain import model
 
 
 # abc = absctract base class

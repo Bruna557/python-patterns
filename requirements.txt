@@ -2,4 +2,3 @@ pytest
 sqlalchemy
 flask
 psycopg2-binary
-requests
