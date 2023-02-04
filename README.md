@@ -13,7 +13,32 @@ We can't allocate to a batch if the available quantity is less than the quantity
 pytest
 ```
 
+## Database setup
+psql -U postgres
+\connect allocation
+
+CREATE TABLE batches(id SERIAL PRIMARY KEY, reference VARCHAR, sku VARCHAR, _purchased_quantity INTEGER, eta DATE);
+CREATE TABLE order_lines(id SERIAL PRIMARY KEY, sku VARCHAR, qty INTEGER, orderid VARCHAR);
+CREATE TABLE allocations(id SERIAL PRIMARY KEY, orderline_id INTEGER, batch_id INTEGER, FOREIGN KEY (orderline_id) REFERENCES order_lines(id), FOREIGN KEY (batch_id) REFERENCES batches(id));
+
+INSERT INTO batches (reference, sku, _purchased_quantity, eta) VALUES ('123', 'SMALL-TABLE', 20, null);
+
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO allocation;
+GRANT INSERT ON ALL TABLES IN SCHEMA public TO allocation;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO allocation;
+
+## Run app
+FLASK_APP=flask_app.py
+FLASK_DEBUG=1
+PYTHONUNBUFFERED=1
+flask run --host=0.0.0.0 --port=5005
+
 ## Patterns
 ### Repository
 The Repository pattern is an abstraction over persistent storage. It hides the boring details of data access by pretending that all of our data is in memory.
 It also makes it easy to create a FakeRepository for testing.
+
+### Service layer
+By adding a service layer
+- Our Flask API endpoints become very thin and easy to write: their only responsibility is doing “web stuff,” such as parsing JSON and producing the right HTTP codes for happy or unhappy cases.
+- We have a single place to capture all the use cases for our application.
