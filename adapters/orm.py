@@ -4,19 +4,6 @@ from sqlalchemy.orm import relationship, registry
 from domain import model
 
 
-'''
-Classic SQLAlchemy would have the model depending on the ORM:
-
-    class OrderLine(Base):
-        id = Column(Integer, primary_key=True)
-
-Here we invert the dependency and make the ORM depend on the model;
-we define the schema separately and define and explicit mapper for
-how to convert between the schema and our domain model.
-The end result will be that, if we call start_mappers, we will be able to
-easily load and save domain model instances from and to the database.
-'''
-
 metadata = MetaData()
 
 order_lines = Table(
