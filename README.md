@@ -28,10 +28,10 @@ GRANT INSERT ON ALL TABLES IN SCHEMA public TO allocation;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO allocation;
 
 ## Run app
-FLASK_APP=flask_app.py
-FLASK_DEBUG=1
-PYTHONUNBUFFERED=1
-flask run --host=0.0.0.0 --port=5005
+export FLASK_APP=entrypoints/flask_app.py
+export FLASK_DEBUG=1
+export PYTHONUNBUFFERED=1
+export flask run --host=0.0.0.0 --port=5005
 
 ## Chapters
 ### 2 - Repository Pattern
@@ -59,4 +59,10 @@ Cons:
 #### Ports and Adapters
 Ports and adapters came out of the OO world, and the definition we hold onto is that the port is the interface between our application and whatever it is we wish to abstract away, and the adapter is the implementation behind that interface or abstraction.
 
-Concretely, AbstractRepository is a port, and SqlAlchemyRepository and FakeRepository are the adapters.
+Concretely, AbstractRepository is a port, and SqlAlchemyRepository and FakeRepository are the adapters. Entrypoints are adapters too.
+
+### 5 - TDD in High Gear and Low Gear
+Every line of code that we put in a test is like a blob of glue, holding the system in a particular shape. The more low-level tests we have, the harder it will be to change things.
+Tests are supposed to help us change our system fearlessly, but often we see teams writing too many tests against their domain model. This causes problems when they come to change their codebase and find that they need to update tens or even hundreds of unit tests.
+
+Most of the time, when we are adding a new feature or fixing a bug, we don’t need to make extensive changes to the domain model. In these cases, we prefer to write tests against services because of the lower coupling and higher coverage. When starting a new project or when hitting a particularly gnarly problem, we will drop back down to writing tests against the domain model so we get better feedback and executable documentation of our intent.
