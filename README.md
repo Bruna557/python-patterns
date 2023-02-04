@@ -31,7 +31,7 @@ GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO allocation;
 export FLASK_APP=entrypoints/flask_app.py
 export FLASK_DEBUG=1
 export PYTHONUNBUFFERED=1
-export flask run --host=0.0.0.0 --port=5005
+flask run --host=0.0.0.0 --port=5005
 
 ## Chapters
 ### 2 - Repository Pattern
