@@ -28,9 +28,9 @@ GRANT INSERT ON ALL TABLES IN SCHEMA public TO allocation;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO allocation;
 
 ## Run app
-FLASK_APP=flask_app.py
-FLASK_DEBUG=1
-PYTHONUNBUFFERED=1
+export FLASK_APP=entrypoints/flask_app.py
+export FLASK_DEBUG=1
+export PYTHONUNBUFFERED=1
 flask run --host=0.0.0.0 --port=5005
 
 ## Chapters
