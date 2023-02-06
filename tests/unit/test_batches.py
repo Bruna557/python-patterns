@@ -10,8 +10,7 @@ def make_batch_and_line(sku, batch_qty, line_qty):
 
 
 def test_allocating_to_a_batch_reduces_the_available_quantity():
-    batch = Batch("batch-ref", "small-table", qty=20, eta=date.today())
-    line = OrderLine("order-ref", "small-table", 2)
+    batch, line = make_batch_and_line("SMALL-TABLE", 20, 2)
 
     batch.allocate(line)
 

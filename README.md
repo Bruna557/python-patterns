@@ -15,16 +15,18 @@ pytest
 
 ## Database setup
 psql -U postgres
+CREATE ROLE allocation LOGIN PASSWORD '1234' NOINHERIT CREATEDB;
+CREATE DATABASE allocation
 \connect allocation
 
-CREATE TABLE batches(id SERIAL PRIMARY KEY, reference VARCHAR, sku VARCHAR, _purchased_quantity INTEGER, eta DATE);
+CREATE TABLE products (sku VARCHAR PRIMARY KEY, version_number INTEGER DEFAULT '0' NOT NULL);
+CREATE TABLE batches(id SERIAL PRIMARY KEY, reference VARCHAR, sku VARCHAR, _purchased_quantity INTEGER, eta DATE, FOREIGN KEY (sku) REFERENCES products(sku));
 CREATE TABLE order_lines(id SERIAL PRIMARY KEY, sku VARCHAR, qty INTEGER, orderid VARCHAR);
 CREATE TABLE allocations(id SERIAL PRIMARY KEY, orderline_id INTEGER, batch_id INTEGER, FOREIGN KEY (orderline_id) REFERENCES order_lines(id), FOREIGN KEY (batch_id) REFERENCES batches(id));
 
 INSERT INTO batches (reference, sku, _purchased_quantity, eta) VALUES ('123', 'SMALL-TABLE', 20, null);
 
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO allocation;
-GRANT INSERT ON ALL TABLES IN SCHEMA public TO allocation;
+GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO allocation;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO allocation;
 
 ## Run app
@@ -86,5 +88,14 @@ Tests are supposed to help us change our system fearlessly, but often we see tea
 Most of the time, when we are adding a new feature or fixing a bug, we don’t need to make extensive changes to the domain model. In these cases, we prefer to write tests against services because of the lower coupling and higher coverage. When starting a new project or when hitting a particularly gnarly problem, we will drop back down to writing tests against the domain model so we get better feedback and executable documentation of our intent.
 
 ### 6 - Unit of Work
-The Unit of Work (UoW) pattern is our abstraction over the concept of atomic operations. It will allow us to finally and fully decouple our service layer from the data layer.
+The Unit of Work (UoW) pattern is an abstraction around data integrity. Each unit of work represents an atomic update. It will allow us to finally and fully decouple our service layer from the data layer.
 We implemented the UoW class using Python Context Manager; the with keyword is used.
+
+### 7 - Aggregate
+Read chapter 7:
+- Invariants, Constraints, and Consistency
+- What Is an Aggregate?
+
+The Product we define here might not look like what you’d expect a Product model to look like. No price, no description, no dimensions. Our allocation service doesn’t care about any of those things. This is the power of bounded contexts; the concept of a product in one app can be very different from another. Rather than trying to build a single model (or class, or database) to capture all the use cases, it’s better to have several models, draw boundaries around each context, and handle the translation between different contexts explicitly.
+
+Once you define certain entities to be aggregates, we need to apply the rule that they are the only entities that are publicly accessible to the outside world. In other words, the only repositories we are allowed should be repositories that return aggregates.
