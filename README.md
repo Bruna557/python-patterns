@@ -1,6 +1,6 @@
 # Example application code for the python architecture book
 
-A product is identified by a SKU, pronounced “skew,” which is short for stock-keeping unit. Customers place orders. An order is identified by an order reference and comprises multiple order lines, where each line has a SKU and a quantity.
+A product is identified by a SKU, pronounced "skew," which is short for stock-keeping unit. Customers place orders. An order is identified by an order reference and comprises multiple order lines, where each line has a SKU and a quantity.
 
 The purchasing department orders small batches of stock. A batch of stock has a unique ID called a reference, a SKU, and a quantity.
 
@@ -69,7 +69,7 @@ how to convert between the schema and our domain model. The end result will be t
 
 ### 4 - Service Layer
 By adding a service layer
-- Our Flask API endpoints become very thin and easy to write: their only responsibility is doing “web stuff,” such as parsing JSON and producing the right HTTP codes for happy or unhappy cases;
+- Our Flask API endpoints become very thin and easy to write: their only responsibility is doing "web stuff," such as parsing JSON and producing the right HTTP codes for happy or unhappy cases;
 - We have a single place to capture all the use cases for our application.
 
 Cons:
@@ -85,7 +85,7 @@ Concretely, AbstractRepository is a port, and SqlAlchemyRepository and FakeRepos
 Every line of code that we put in a test is like a blob of glue, holding the system in a particular shape. The more low-level tests we have, the harder it will be to change things.
 Tests are supposed to help us change our system fearlessly, but often we see teams writing too many tests against their domain model. This causes problems when they come to change their codebase and find that they need to update tens or even hundreds of unit tests.
 
-Most of the time, when we are adding a new feature or fixing a bug, we don’t need to make extensive changes to the domain model. In these cases, we prefer to write tests against services because of the lower coupling and higher coverage. When starting a new project or when hitting a particularly gnarly problem, we will drop back down to writing tests against the domain model so we get better feedback and executable documentation of our intent.
+Most of the time, when we are adding a new feature or fixing a bug, we don't need to make extensive changes to the domain model. In these cases, we prefer to write tests against services because of the lower coupling and higher coverage. When starting a new project or when hitting a particularly gnarly problem, we will drop back down to writing tests against the domain model so we get better feedback and executable documentation of our intent.
 
 ### 6 - Unit of Work
 The Unit of Work (UoW) pattern is an abstraction around data integrity. Each unit of work represents an atomic update. It will allow us to finally and fully decouple our service layer from the data layer.
@@ -96,6 +96,27 @@ Read chapter 7:
 - Invariants, Constraints, and Consistency
 - What Is an Aggregate?
 
-The Product we define here might not look like what you’d expect a Product model to look like. No price, no description, no dimensions. Our allocation service doesn’t care about any of those things. This is the power of bounded contexts; the concept of a product in one app can be very different from another. Rather than trying to build a single model (or class, or database) to capture all the use cases, it’s better to have several models, draw boundaries around each context, and handle the translation between different contexts explicitly.
+The Product we define here might not look like what you'd expect a Product model to look like. No price, no description, no dimensions. Our allocation service doesn't care about any of those things. This is the power of bounded contexts; the concept of a product in one app can be very different from another. Rather than trying to build a single model (or class, or database) to capture all the use cases, it's better to have several models, draw boundaries around each context, and handle the translation between different contexts explicitly.
 
 Once you define certain entities to be aggregates, we need to apply the rule that they are the only entities that are publicly accessible to the outside world. In other words, the only repositories we are allowed should be repositories that return aggregates.
+
+### 8 - Events and the Message Bus
+When we can't allocate an order because we're out of stock, we should alert the buying team by sending an email. Where to put this logic?
+We don't want our model to have any dependencies on infrastructure concerns like email.send_mail. In the service layer, it violates the SRP (allocate_and_send_mail_if_out_of_stock). To solve this problem we're going to introduce the patterns Domain Events and the Message Bus.
+
+- Rather than being concerned about emails, our model will be in charge of recording events.
+- An event is a kind of value object. Events don't have any behavior, because they're pure data structures.
+- A message bus basically says, "When I see this event, I should invoke the following handler function." In other words, it's a simple publish-subscribe system. Handlers are subscribed to receive events, which we publish to the bus.
+
+Pros:
+- A message bus gives us a nice way to separate responsibilities when we have to take multiple actions in response to a request.
+- Event handlers are nicely decoupled from the "core" application logic, making it easy to change their implementation later.
+
+Cons:
+- The message bus is an additional thing to wrap your head around; the implementation in which the unit of work raises events for us is neat but also magic. It's not obvious when we call commit that we're also going to go and send email to people.
+- What's more, that hidden event-handling code executes synchronously, meaning your service-layer function doesn't finish until all the handlers for any events are finished. That could cause unexpected performance problems in your web endpoints (adding asynchronous processing is possible but makes things even more confusing).
+- More generally, event-driven workflows can be confusing because after things are split across a chain of multiple handlers, there is no single place in the system where you can understand how a request will be fulfilled.
+
+
+### Epilogue
+Aggregates are a consistency boundary. In general, each use case should update a single aggregate at a time. One handler fetches one aggregate from a repository, modifies its state, and raises any events that happen as a result. If you need data from another part of the system, it's totally fine to use a read model, but avoid updating multiple aggregates in a single transaction.

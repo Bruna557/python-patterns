@@ -4,25 +4,39 @@ from allocation.domain import model
 
 # abc = absctract base class
 class AbstractRepository(abc.ABC):
+    def __init__(self):
+        self.seen = set() # type: Set[model.Product]
+
+    def add(self, product: model.Product):
+        self._add(product)
+        self.seen.add(product)
+
+    def get(self, sku) -> model.Product:
+        product = self._get(sku)
+        if product:
+            self.seen.add(product)
+        return product
+
     '''
     Python will not let you instantiate a class that doesn't implement
     all the abstractmethod defined in its parent class
     '''
     @abc.abstractmethod
-    def add(self, product: model.Product):
+    def _add(self, product: model.Product):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get(self, sku) -> model.Product:
+    def _get(self, sku) -> model.Product:
         raise NotImplementedError
 
 
 class SqlAlchemyRepository(AbstractRepository):
     def __init__(self, session):
+        super().__init__()
         self.session = session
 
-    def add(self, product):
+    def _add(self, product):
         self.session.add(product)
 
-    def get(self, sku):
+    def _get(self, sku):
         return self.session.query(model.Product).filter_by(sku=sku).first()

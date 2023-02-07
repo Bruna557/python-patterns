@@ -5,21 +5,39 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 
+
 from allocation import config
 from allocation.adapters import repository
+from . import messagebus
 
 
 class AbstractUnitOfWork(abc.ABC):
     products: repository.AbstractProductRepository
 
-    def __enter__(self) -> AbstractUnitOfWork: # executed when we enter the with block
+    # executed when we enter the with block
+    def __enter__(self) -> AbstractUnitOfWork:
         return self
 
-    def __exit__(self, *args): # executed when we exit the with block
+    # executed when we exit the with block
+    def __exit__(self, *args):
         self.rollback()
 
-    @abc.abstractmethod
     def commit(self):
+        self._commit()
+        self.publish_events()
+
+    '''
+    After committing, we run through all the objects that our repository has
+    seen and pass their events to the message bus.
+    '''
+    def publish_events(self):
+        for product in self.products.seen:
+            while product.events:
+                event = product.events.pop(0)
+                messagebus.handle(event)
+
+    @abc.abstractmethod
+    def _commit(self):
         raise NotImplementedError
 
     '''
@@ -51,7 +69,7 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
         super().__exit__(*args)
         self.session.close()
 
-    def commit(self):
+    def _commit(self):
         self.session.commit()
 
     def rollback(self):
