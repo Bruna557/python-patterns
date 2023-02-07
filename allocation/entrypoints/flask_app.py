@@ -22,7 +22,7 @@ def add_batch():
     return "OK", 201
 
 
-@app.route("/allocate", methods=["POST"])
+@app.route("/allocations", methods=["POST"])
 def allocate():
     try:
         cmd = commands.Allocate(
@@ -34,3 +34,12 @@ def allocate():
         return {"message": str(e)}, 400
 
     return {"batchref": batchref}, 201
+
+
+@app.route("/allocations/<orderid>", methods=["GET"])
+def allocations_view_endpoint(orderid):
+    uow = unit_of_work.SqlAlchemyUnitOfWork()
+    result = views.allocations(orderid, uow)
+    if not result:
+        return "not found", 404
+    return jsonify(result), 200

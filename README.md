@@ -141,7 +141,16 @@ Like aggregates, microservices should be consistency boundaries. Between two ser
 To avoid the Distributed Ball of Mud anti-pattern, instead of temporally coupled HTTP API calls, we want to use asynchronous messaging to integrate our systems. We want our BatchQuantityChanged messages to come in as external messages from upstream systems, and we want our system to publish Allocated events for downstream systems to listen to.
 Why is this better? First, because things can fail independently, it's easier to handle degraded behavior: we can still take orders if the allocation system is having a bad day. Second, we're reducing the strength of coupling between our systems. If we need to change the order of operations or to introduce new steps in the process, we can do that locally.
 
-We'll need some way of getting events out of one system and into another, like our message bus, but for services. This piece of infrastructure is often called a message broker. Kafka or RabbitMQ are valid alternatives. A lightweight solution based on Redis pub/sub channels can also work just fine
+We'll need some way of getting events out of one system and into another, like our message bus, but for services. This piece of infrastructure is often called a message broker. Kafka or RabbitMQ are valid alternatives. A lightweight solution based on Redis pub/sub channels can also work just fine.
+
+### 12 - CQRS
+Our customers won’t notice if a query is a few seconds out of date, but if our allocate service is inconsistent, we’ll make a mess of their orders. We can take advantage of this difference by making our reads eventually consistent in order to make them perform better.
+For the write side, our fancy domain architectural patterns help us to evolve our system over time, but the complexity we’ve built so far doesn’t buy anything for reading data. The service layer, the unit of work, and the clever domain model are just bloat.
+
+In CQS we follow one simple rule: functions should either modify state or answer questions, but never both.
+
+Using the repository for querying is the simple approach, but expect performance issues with complex query patterns.
+Instead, we introduce a denormalized data store for our view model (allocations_view) and use hand-rolled SQL to obtain fine control over performance.
 
 
 ### Epilogue
