@@ -24,17 +24,15 @@ class AbstractUnitOfWork(abc.ABC):
 
     def commit(self):
         self._commit()
-        self.publish_events()
 
     '''
     After committing, we run through all the objects that our repository has
     seen and pass their events to the message bus.
     '''
-    def publish_events(self):
+    def collect_new_events(self):
         for product in self.products.seen:
             while product.events:
-                event = product.events.pop(0)
-                messagebus.handle(event)
+                yield product.events.pop(0)
 
     @abc.abstractmethod
     def _commit(self):
