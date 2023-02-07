@@ -125,11 +125,24 @@ An event we'll call BatchQuantityChanged should lead us to change the quantity o
 output.
 - services.add_batch() could be the handler for a BatchCreated event.
 - An event called BatchQuantityChanged can invoke a handler called change_batch_quantity().
-- And the new AllocationRequired events that it may raise can be passed on to services.allocate() too, so there is no conceptual difference between a brand-new allocation coming from the API and a reallocation that’s internally triggered by a deallocation.
+- And the new AllocationRequired events that it may raise can be passed on to services.allocate() too, so there is no conceptual difference between a brand-new allocation coming from the API and a reallocation that's internally triggered by a deallocation.
 
 ### 10 - Commands
 Like events, commands are a type of message—instructions sent by one part of a system to another. Commands are sent by one actor to another specific actor with the expectation that a particular thing will happen as a result.
 Commands capture intent. They express our wish for the system to do something. As a result, when they fail, the sender needs to receive error information. We often use events to spread the knowledge about successful commands.
+
+### 11 - External Events
+The style of architecture where we create a microservice per database table and treat our HTTP APIs as CRUD interfaces to anemic models, is the most common initial way for people to approach service-oriented design. This works fine for systems that are very simple, but it can quickly degrade into a distributed ball of mud.
+
+How do we get appropriate coupling? We've already seen part of the answer, which is that we should think in terms of verbs, not nouns. Our domain model is about modeling a business process. It's not a static data model about a thing; it's a model of a verb.
+So instead of thinking about a system for orders and a system for batches, we think about a system for ordering and a system for allocating, and so on.
+Like aggregates, microservices should be consistency boundaries. Between two services, we can accept eventual consistency, and that means we don't need to rely on synchronous calls. Each service accepts commands from the outside world and raises events to record the result. Other services can listen to those events to trigger the next steps in the workflow.
+
+To avoid the Distributed Ball of Mud anti-pattern, instead of temporally coupled HTTP API calls, we want to use asynchronous messaging to integrate our systems. We want our BatchQuantityChanged messages to come in as external messages from upstream systems, and we want our system to publish Allocated events for downstream systems to listen to.
+Why is this better? First, because things can fail independently, it's easier to handle degraded behavior: we can still take orders if the allocation system is having a bad day. Second, we're reducing the strength of coupling between our systems. If we need to change the order of operations or to introduce new steps in the process, we can do that locally.
+
+We'll need some way of getting events out of one system and into another, like our message bus, but for services. This piece of infrastructure is often called a message broker. Kafka or RabbitMQ are valid alternatives. A lightweight solution based on Redis pub/sub channels can also work just fine
+
 
 ### Epilogue
 Aggregates are a consistency boundary. In general, each use case should update a single aggregate at a time. One handler fetches one aggregate from a repository, modifies its state, and raises any events that happen as a result. If you need data from another part of the system, it's totally fine to use a read model, but avoid updating multiple aggregates in a single transaction.
