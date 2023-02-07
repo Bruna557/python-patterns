@@ -117,7 +117,7 @@ Cons:
 - What's more, that hidden event-handling code executes synchronously, meaning your service-layer function doesn't finish until all the handlers for any events are finished. That could cause unexpected performance problems in your web endpoints (adding asynchronous processing is possible but makes things even more confusing).
 - More generally, event-driven workflows can be confusing because after things are split across a chain of multiple handlers, there is no single place in the system where you can understand how a request will be fulfilled.
 
-### Message Bus
+### 9 - Message Bus
 An event we'll call BatchQuantityChanged should lead us to change the quantity on the batch and also to apply a business rule: if the new quantity drops to less than the total already allocated, we need to deallocate those orders from that batch. Then each one will require a new allocation, which we can capture as an event called AllocationRequired.
 
 #### Architecture Change: Everything Will Be an Event Handler
@@ -126,6 +126,10 @@ output.
 - services.add_batch() could be the handler for a BatchCreated event.
 - An event called BatchQuantityChanged can invoke a handler called change_batch_quantity().
 - And the new AllocationRequired events that it may raise can be passed on to services.allocate() too, so there is no conceptual difference between a brand-new allocation coming from the API and a reallocation that’s internally triggered by a deallocation.
+
+### 10 - Commands
+Like events, commands are a type of message—instructions sent by one part of a system to another. Commands are sent by one actor to another specific actor with the expectation that a particular thing will happen as a result.
+Commands capture intent. They express our wish for the system to do something. As a result, when they fail, the sender needs to receive error information. We often use events to spread the knowledge about successful commands.
 
 ### Epilogue
 Aggregates are a consistency boundary. In general, each use case should update a single aggregate at a time. One handler fetches one aggregate from a repository, modifies its state, and raises any events that happen as a result. If you need data from another part of the system, it's totally fine to use a read model, but avoid updating multiple aggregates in a single transaction.
