@@ -1,4 +1,4 @@
-# Example application code for the python architecture book
+# Example application code from the book "Architecture Patterns with Python"
 
 A product is identified by a SKU, pronounced "skew," which is short for stock-keeping unit. Customers place orders. An order is identified by an order reference and comprises multiple order lines, where each line has a SKU and a quantity.
 
